@@ -19,6 +19,52 @@ from app.main import strip_patient_title, get_canonical_patient_key, sync_and_up
 # Ensure tables are created in SQLite
 Base.metadata.create_all(bind=engine)
 
+# Static serving configuration for Streamlit Cloud & local
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+STATIC_REPORTS_DIR = os.path.join(STATIC_DIR, "reports")
+os.makedirs(STATIC_REPORTS_DIR, exist_ok=True)
+
+# Pre-populate static reports from data/uploads if present
+if os.path.exists(UPLOADS_DIR):
+    for up_f in os.listdir(UPLOADS_DIR):
+        if up_f.lower().endswith(".pdf") and not up_f.startswith("temp_"):
+            clean_name = up_f
+            if len(up_f) > 15 and up_f[:14].isdigit() and up_f[14] == "_":
+                clean_name = up_f[15:]
+            tgt = os.path.join(STATIC_REPORTS_DIR, clean_name)
+            src = os.path.join(UPLOADS_DIR, up_f)
+            if not os.path.exists(tgt) or os.path.getsize(tgt) != os.path.getsize(src):
+                try:
+                    shutil.copy2(src, tgt)
+                except Exception:
+                    pass
+
+def sync_file_to_static(file_p: str, orig_filename: str) -> str:
+    """Copies the report to the Streamlit static serving directory and returns the relative URL."""
+    clean_name = re.sub(r'[^a-zA-Z0-9_\.-]', '_', orig_filename)
+    if not clean_name.lower().endswith(".pdf"):
+        clean_name += ".pdf"
+    clean_lower = clean_name.lower()
+
+    # 1. Check if an existing file matches in STATIC_REPORTS_DIR
+    if os.path.exists(STATIC_REPORTS_DIR):
+        for f in os.listdir(STATIC_REPORTS_DIR):
+            f_lower = f.lower()
+            if f_lower == clean_lower or f_lower.endswith(clean_lower) or clean_lower.endswith(f_lower):
+                return f"/app/static/reports/{f}"
+
+    # 2. If not found, copy from file_p
+    if not file_p or not os.path.exists(file_p):
+        return ""
+
+    target_path = os.path.join(STATIC_REPORTS_DIR, clean_name)
+    try:
+        if not os.path.exists(target_path) or os.path.getsize(target_path) != os.path.getsize(file_p):
+            shutil.copy2(file_p, target_path)
+        return f"/app/static/reports/{clean_name}"
+    except Exception:
+        return ""
+
 # -------------------------------------------------------------
 # Page Configuration & CSS
 # -------------------------------------------------------------
@@ -238,22 +284,36 @@ def get_embeddable_pdf_bytes(file_bytes: bytes, max_pages: int = 10):
     except Exception:
         return file_bytes, False, 0, 0
 
-def render_pdf_viewer(file_bytes: bytes, filename: str):
-    """Renders PDF using safe standard iframe with automatic memory optimization for large dossiers."""
-    render_bytes, is_preview, p_count, total_count = get_embeddable_pdf_bytes(file_bytes)
-    base64_pdf = base64.b64encode(render_bytes).decode("utf-8")
+def render_pdf_viewer(file_bytes: bytes, filename: str, file_path: str = ""):
+    """Renders PDF using static HTTP URL (avoids Chrome data-URI iframe blocks) with direct new tab and download options."""
+    static_url = sync_file_to_static(file_path, filename) if file_path else ""
 
-    if is_preview:
-        st.caption(f"ℹ️ *Showing in-line document preview of the primary clinical checkup pages (Pages 1 to {p_count} of {total_count}). Use the primary button above to download/open the full {round(len(file_bytes)/(1024*1024), 1)} MB scan file.*")
-
-    st.markdown(f'''
-    <div style="margin-top: 0.5rem;">
-        <iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=1" width="100%" height="750px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px; background: white;"></iframe>
-    </div>
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #64748b;">
-        📱 <strong>Mobile Note:</strong> Most mobile browsers (Android Chrome & iPhone Safari) do not support in-page PDF frames. Tap the blue <strong>Download / Open Original File</strong> button above to open the full document directly in your phone's viewer.
-    </div>
-    ''', unsafe_allow_html=True)
+    if static_url:
+        st.markdown(f'''
+        <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <a href="{static_url}" target="_blank" style="display: inline-flex; align-items: center; gap: 0.4rem; background-color: #0284c7; color: white; padding: 0.45rem 1.1rem; font-size: 0.85rem; font-weight: 600; text-decoration: none; border-radius: 6px;">
+                🔍 Open Full PDF in New Tab
+            </a>
+        </div>
+        <div style="margin-top: 0.25rem;">
+            <iframe src="{static_url}#toolbar=1" width="100%" height="750px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px; background: white;">
+                <p style="padding: 1rem; color: #64748b;">If your browser does not render the in-line frame, please use the <strong>Open Full PDF in New Tab</strong> or <strong>Download Original File</strong> button above.</p>
+            </iframe>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #64748b;">
+            📱 <strong>Mobile Note:</strong> Mobile browsers (Android Chrome & iPhone Safari) do not render PDFs inside web frames. Tap <strong>Open Full PDF in New Tab</strong> or <strong>Download Original File</strong> above to open the complete document on your phone.
+        </div>
+        ''', unsafe_allow_html=True)
+    else:
+        render_bytes, is_preview, p_count, total_count = get_embeddable_pdf_bytes(file_bytes)
+        base64_pdf = base64.b64encode(render_bytes).decode("utf-8")
+        if is_preview:
+            st.caption(f"ℹ️ *Showing in-line document preview of the primary clinical checkup pages (Pages 1 to {p_count} of {total_count}). Use the primary button above to download/open the full {round(len(file_bytes)/(1024*1024), 1)} MB scan file.*")
+        st.markdown(f'''
+        <div style="margin-top: 0.5rem;">
+            <iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=1" width="100%" height="750px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px; background: white;"></iframe>
+        </div>
+        ''', unsafe_allow_html=True)
 
 def resolve_report_file_path(r: dict) -> str:
     """Finds the actual file path on disk for a report, cross-platform (Windows & Linux Streamlit Cloud)."""
@@ -804,7 +864,7 @@ with tab_archive:
                         )
 
                         if file_p.lower().endswith(".pdf"):
-                            render_pdf_viewer(file_bytes, disp_filename)
+                            render_pdf_viewer(file_bytes, disp_filename, file_p)
                         else:
                             st.text_area("Document Content", value=file_bytes.decode("utf-8", errors="ignore"), height=400, disabled=True, key=f"txt_{r['id']}")
                     else:
