@@ -21,6 +21,28 @@ try:
 except ImportError:
     HAS_PDF_VIEWER = False
 
+def strip_patient_title(name) -> str:
+    """Strips honorific titles/salutations (Mr., Mrs., Ms., Dr., Miss, Master, etc.)"""
+    if not name:
+        return "Unknown Patient"
+    cleaned = re.sub(r'^(?:mr|mrs|ms|miss|dr|prof|shri|smt|master|baby|m/s)\.?\s+', '', str(name).strip(), flags=re.IGNORECASE)
+    return cleaned.strip() or str(name).strip()
+
+def get_canonical_patient_key(name) -> str:
+    """
+    Groups patient names by ignoring titles and matching the root name:
+    'Mrs. PUVIARASI MJ', 'Ms. PUVIARASI', 'PUVIARASI' -> 'PUVIARASI'
+    'Mr. ARUN KUMAR' -> 'ARUN KUMAR'
+    """
+    clean = strip_patient_title(name).upper()
+    tokens = [t for t in re.split(r'[\s\.\-_]+', clean) if t]
+    if not tokens:
+        return "UNKNOWN"
+    sig_tokens = [t for t in tokens if len(t) > 2]
+    if sig_tokens:
+        return " ".join(sig_tokens)
+    return " ".join(tokens)
+
 # Ensure tables are created in SQLite
 Base.metadata.create_all(bind=engine)
 
