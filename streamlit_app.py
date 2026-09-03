@@ -246,11 +246,17 @@ def render_pdf_viewer(file_bytes: bytes, filename: str):
     if is_preview:
         st.caption(f"ℹ️ *Showing in-line document preview of the primary clinical checkup pages (Pages 1 to {p_count} of {total_count}). Use the primary button above to download/open the full {round(len(file_bytes)/(1024*1024), 1)} MB scan file.*")
 
-    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=1" width="100%" height="750px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 0.5rem; background: white;"></iframe>'
-    st.markdown(pdf_display, unsafe_allow_html=True)
+    st.markdown(f'''
+    <div style="margin-top: 0.5rem;">
+        <iframe src="data:application/pdf;base64,{base64_pdf}#toolbar=1" width="100%" height="750px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px; background: white;"></iframe>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #64748b;">
+        📱 <strong>Mobile Note:</strong> Most mobile browsers (Android Chrome & iPhone Safari) do not support in-page PDF frames. Tap the blue <strong>Download / Open Original File</strong> button above to open the full document directly in your phone's viewer.
+    </div>
+    ''', unsafe_allow_html=True)
 
 def resolve_report_file_path(r: dict) -> str:
-    """Finds the actual file path on disk for a report, matching timestamps or variants."""
+    """Finds the actual file path on disk for a report, cross-platform (Windows & Linux Streamlit Cloud)."""
     file_p = r.get("file_path", "")
     if file_p and os.path.exists(file_p):
         return file_p
@@ -258,19 +264,31 @@ def resolve_report_file_path(r: dict) -> str:
     orig_name = r.get("original_filename", "")
     orig_lower = orig_name.lower().strip() if orig_name else ""
 
-    if orig_name:
-        exact = os.path.join(UPLOADS_DIR, orig_name)
-        if os.path.exists(exact):
-            return exact
+    # Potential search folders on local Windows or Streamlit Cloud Linux containers
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    search_dirs = [
+        UPLOADS_DIR,
+        os.path.join(base_dir, "data", "uploads"),
+        os.path.join(base_dir, "data"),
+        os.path.join(base_dir, "uploads"),
+        base_dir
+    ]
 
-    if os.path.exists(UPLOADS_DIR):
-        files = [
-            os.path.join(UPLOADS_DIR, f) for f in os.listdir(UPLOADS_DIR)
-            if os.path.isfile(os.path.join(UPLOADS_DIR, f))
-        ]
-        files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+    for s_dir in search_dirs:
+        if not (s_dir and os.path.exists(s_dir)):
+            continue
 
-        for f in files:
+        # 1. Exact match
+        if orig_name:
+            exact = os.path.join(s_dir, orig_name)
+            if os.path.exists(exact) and os.path.isfile(exact):
+                return exact
+
+        # 2. Case-insensitive scan
+        all_files = [os.path.join(s_dir, f) for f in os.listdir(s_dir) if os.path.isfile(os.path.join(s_dir, f))]
+        all_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+
+        for f in all_files:
             bname = os.path.basename(f).lower()
             if orig_lower and (bname.endswith(orig_lower) or orig_lower.endswith(bname)):
                 return f
@@ -278,7 +296,7 @@ def resolve_report_file_path(r: dict) -> str:
         pname_clean = strip_patient_title(r.get("patient_name", "")).lower()
         pname_token = pname_clean.split()[0] if pname_clean else ""
         year_str = str(r.get("report_year", ""))
-        for f in files:
+        for f in all_files:
             bname = os.path.basename(f).lower()
             if pname_token and pname_token in bname and year_str and year_str in bname:
                 return f
