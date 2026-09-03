@@ -14,7 +14,12 @@ from app.models import Report, Biomarker, DietPlan
 from app.extractor import parse_medical_report, extract_text_from_pdf
 from pypdf import PdfReader, PdfWriter
 from app.diet_engine import create_diet_plan, analyze_health_findings
-from app.main import strip_patient_title, get_canonical_patient_key, sync_and_upgrade_reports_data
+# Safe import for dedicated PDF viewer component
+try:
+    from streamlit_pdf_viewer import pdf_viewer
+    HAS_PDF_VIEWER = True
+except ImportError:
+    HAS_PDF_VIEWER = False
 
 # Ensure tables are created in SQLite
 Base.metadata.create_all(bind=engine)
@@ -285,7 +290,24 @@ def get_embeddable_pdf_bytes(file_bytes: bytes, max_pages: int = 10):
         return file_bytes, False, 0, 0
 
 def render_pdf_viewer(file_bytes: bytes, filename: str, file_path: str = ""):
-    """Renders PDF using static HTTP URL (avoids Chrome data-URI iframe blocks) with direct new tab and download options."""
+    """Renders PDF seamlessly across Streamlit Cloud, Desktop Chrome, and Mobile."""
+    # 1. Dedicated Mozilla PDF.js canvas viewer (works on all browsers & Streamlit Cloud)
+    if HAS_PDF_VIEWER:
+        try:
+            pdf_viewer(input=file_bytes, height=750)
+            return
+        except Exception:
+            pass
+
+    # 2. Native st.pdf if supported by Streamlit
+    if hasattr(st, "pdf"):
+        try:
+            st.pdf(file_bytes, height=750)
+            return
+        except Exception:
+            pass
+
+    # 3. Static HTTP serving or safe iframe fallback
     static_url = sync_file_to_static(file_path, filename) if file_path else ""
 
     if static_url:
