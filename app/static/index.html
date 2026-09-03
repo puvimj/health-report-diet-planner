@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthTrack & DietRx - Personal Health Report Manager & Diet Planner</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-gradient-to-tr from-sky-600 to-teal-500 text-white p-2 rounded-xl shadow-md flex items-center justify-center">
+                        <i data-lucide="heart-pulse" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-tight">HealthTrack <span class="text-teal-600">& DietRx</span></h1>
+                        <p class="text-xs text-slate-500 font-medium">Personal Medical Archive & Biomarker Diet Planner</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex space-x-1 sm:space-x-4 tab-buttons">
+                    <button data-target="dashboard-section" class="tab-btn px-3 py-2 text-sm font-semibold border-b-2 border-sky-600 text-sky-600 flex items-center gap-1.5 transition">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button data-target="reports-section" class="tab-btn px-3 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition">
+                        <i data-lucide="folder-archive" class="w-4 h-4"></i>
+                        <span>Reports Archive</span>
+                    </button>
+                    <button data-target="upload-section" class="tab-btn px-3 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition">
+                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                        <span>Upload Report</span>
+                    </button>
+                    <button data-target="diet-section" class="tab-btn px-3 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition">
+                        <i data-lucide="salad" class="w-4 h-4"></i>
+                        <span>Diet Planner</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- ======================================================== -->
+        <!-- TAB 1: DASHBOARD & TRENDS                                -->
+        <!-- ======================================================== -->
+        <section id="dashboard-section" class="tab-content space-y-6">
+            
+            <!-- Patient Selector Pill Bar -->
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+                        <i data-lucide="users" class="w-4 h-4 text-sky-600"></i> Family Member:
+                    </span>
+                    <div id="patient-selector-pills" class="flex flex-wrap items-center gap-1.5">
+                        <!-- Populated dynamically with pills e.g. "All Family Members", "Mrs. PUVIARASI MJ", "Mr. ARUN KUMAR" -->
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="resetDatabase()" class="px-2.5 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="Clear all dummy records">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear DB
+                    </button>
+                    <button onclick="switchTab('upload-section')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i> + Upload Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Patient Banner (shown when a specific patient is selected) -->
+            <div id="patient-active-banner" class="hidden bg-sky-50 border border-sky-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-sky-600 text-white font-bold flex items-center justify-center text-sm shadow-sm" id="patient-banner-avatar">
+                        P
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-slate-900" id="patient-banner-name">Patient Name</h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-sky-300 text-sky-700" id="patient-banner-badge">Active Profile</span>
+                        </div>
+                        <p class="text-xs text-slate-500" id="patient-banner-meta">Tracking annual medical records</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="selectPatient('ALL')" class="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1 transition">
+                        <i data-lucide="users" class="w-3.5 h-3.5"></i> View All Family Members
+                    </button>
+                </div>
+            </div>
+
+            <!-- Family Overview Section (shown when All Family Members is selected) -->
+            <div id="family-overview-section" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="heart-pulse" class="w-5 h-5 text-rose-500"></i>
+                        <h3 class="text-base font-bold text-slate-900">Family Members Health Status</h3>
+                    </div>
+                    <span class="text-xs text-slate-400">Click any card to explore individual health timeline & diet</span>
+                </div>
+                <div id="family-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Dynamically rendered patient health cards -->
+                </div>
+            </div>
+
+            <!-- Key Performance Indicators (KPIs) Header with Patient Scope -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-600"></i>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Key Health Indicators (KPIs)</h3>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200 w-fit shadow-sm">
+                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-sky-600"></i>
+                    <span id="kpi-patient-scope-badge">Patient: All Family Members</span>
+                </div>
+            </div>
+
+            <!-- Summary Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-sky-300 transition">
+                    <div class="p-3 bg-sky-50 text-sky-600 rounded-xl shrink-0">
+                        <i data-lucide="files" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-2xl font-bold text-slate-900" id="stat-total-reports">0</div>
+                        <div class="text-xs text-slate-500 font-medium truncate">Checkup Reports Saved</div>
+                        <div class="text-[11px] text-sky-700 mt-0.5 font-medium truncate" id="stat-latest-date">No reports yet</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-indigo-300 transition">
+                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
+                        <i data-lucide="calendar" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-2xl font-bold text-slate-900" id="stat-years-tracked">0</div>
+                        <div class="text-xs text-slate-500 font-medium truncate">Years of Health Tracked</div>
+                        <div class="text-[11px] text-indigo-700 mt-0.5 font-medium truncate" id="stat-years-meta">Year-over-Year History</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-teal-300 transition">
+                    <div class="p-3 bg-teal-50 text-teal-600 rounded-xl shrink-0">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-2xl font-bold text-slate-900" id="stat-total-biomarkers">0</div>
+                        <div class="text-xs text-slate-500 font-medium truncate">Lab Biomarkers Stored</div>
+                        <div class="text-[11px] text-teal-700 mt-0.5 font-medium truncate" id="stat-biomarkers-meta">Lipids, Sugar, KFT, LFT</div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-center gap-4 hover:border-red-300 transition">
+                    <div class="p-3 bg-red-50 text-red-600 rounded-xl shrink-0">
+                        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-2xl font-bold text-red-600" id="stat-abnormal-findings">0</div>
+                        <div class="text-xs text-slate-500 font-medium truncate">Active Health Flags</div>
+                        <div class="text-[11px] text-red-600 mt-0.5 font-semibold truncate" id="stat-abnormal-meta">Need Diet/Lifestyle Action</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Year Biomarker Trend Analytics Card -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 mb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-sky-600"></i>
+                            <h2 class="text-lg font-bold text-slate-800">Multi-Year Biomarker Trajectory</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Compare your clinical tests across annual checkups to evaluate progress</p>
+                    </div>
+
+                    <!-- Patient & Metric Selectors -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Patient Selector inside Chart Card -->
+                        <div class="flex items-center gap-1.5">
+                            <label for="trend-patient-select" class="text-xs font-bold text-slate-700 shrink-0 flex items-center gap-1">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-sky-600"></i> Patient:
+                            </label>
+                            <select id="trend-patient-select" onchange="onTrendPatientChange(this.value)" class="text-xs font-bold bg-sky-50 border border-sky-300 rounded-lg px-2.5 py-1.5 text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Biomarker Selector -->
+                        <div class="flex items-center gap-1.5">
+                            <label for="trend-metric-select" class="text-xs font-semibold text-slate-600 shrink-0 flex items-center gap-1">
+                                <i data-lucide="microscope" class="w-3.5 h-3.5 text-indigo-600"></i> Biomarker:
+                            </label>
+                            <select id="trend-metric-select" class="text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="trend-metric-note" class="text-xs text-slate-600 mb-3">
+                    <!-- Note on latest test status -->
+                </div>
+
+                <div class="relative h-72 w-full">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Quick Action CTA -->
+            <div class="bg-gradient-to-r from-sky-600 to-indigo-700 rounded-xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+                <div>
+                    <h3 class="text-lg font-bold">Have your latest yearly checkup report ready?</h3>
+                    <p class="text-xs text-sky-100 mt-1">Upload the PDF or scanned report. Our engine extracts all lab metrics and formulates your custom diet plan.</p>
+                </div>
+                <button onclick="switchTab('upload-section')" class="px-5 py-2.5 bg-white text-sky-800 hover:bg-sky-50 font-semibold text-sm rounded-lg shadow transition shrink-0 flex items-center gap-2">
+                    <i data-lucide="upload" class="w-4 h-4"></i> Upload Report Now
+                </button>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 2: REPORTS ARCHIVE & APT FILTERS                     -->
+        <!-- ======================================================== -->
+        <section id="reports-section" class="tab-content hidden space-y-6">
+            
+            <!-- Filters Header -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4 text-sky-600"></i>
+                        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Filter Reports</h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="document.getElementById('filter-search').value=''; document.getElementById('filter-year').value=''; document.getElementById('filter-patient').value=''; document.getElementById('filter-abnormal').checked=false; loadReports();" class="text-xs text-slate-400 hover:text-sky-600">
+                            Reset Filters
+                        </button>
+                        <span class="text-slate-300">|</span>
+                        <button onclick="resetDatabase()" class="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-medium" title="Delete all reports and clear database">
+                            <i data-lucide="trash" class="w-3 h-3"></i> Clear All Data
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Patient Name Filter -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Patient Name</label>
+                        <select id="filter-patient" onchange="loadReports()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:ring-2 focus:ring-sky-500">
+                            <option value="">All Patients</option>
+                        </select>
+                    </div>
+
+                    <!-- Year Filter -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Checkup Year</label>
+                        <select id="filter-year" onchange="loadReports()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:ring-2 focus:ring-sky-500">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Keyword Search</label>
+                        <div class="relative">
+                            <input type="text" id="filter-search" oninput="loadReports()" placeholder="Search lab or notes..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 text-slate-800 focus:ring-2 focus:ring-sky-500">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+                        </div>
+                    </div>
+
+                    <!-- Abnormal Flag Only Toggle -->
+                    <div class="flex items-end pb-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="filter-abnormal" onchange="loadReports()" class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500">
+                            <span class="text-xs font-semibold text-red-600">Show Out-of-Range Only</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports List Container -->
+            <div id="reports-list">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 3: UPLOAD & INGESTION                                -->
+        <!-- ======================================================== -->
+        <section id="upload-section" class="tab-content hidden space-y-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <div class="flex items-center justify-between border-b pb-4 mb-6">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="file-up" class="w-5 h-5 text-sky-600"></i>
+                            <h2 class="text-lg font-bold text-slate-800">Upload & Live Document Viewer</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Select your medical report. The document will immediately open inside the container below so you can inspect your report while archiving.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- LEFT COLUMN: Live PDF Container (7 cols) -->
+                    <div class="lg:col-span-7 flex flex-col bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span id="pdf-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+                                <h3 id="pdf-container-title" class="text-xs font-bold text-slate-700 uppercase tracking-wider">Document Viewer Container</h3>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a id="upload-pdf-external-btn" href="#" target="_blank" class="hidden px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-sky-700 rounded text-xs font-semibold flex items-center gap-1 transition">
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in New Tab
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Live PDF Container Frame -->
+                        <div class="relative w-full flex-1 min-h-[640px] rounded-lg overflow-hidden bg-white border border-slate-200 shadow-inner flex flex-col">
+                            <div id="pdf-preview-placeholder" class="h-full min-h-[640px] flex flex-col items-center justify-center text-center p-8 bg-slate-50 text-slate-400">
+                                <i data-lucide="file-search" class="w-16 h-16 text-slate-300 mb-3"></i>
+                                <h4 class="text-sm font-bold text-slate-700">Document Container Ready</h4>
+                                <p class="text-xs text-slate-500 mt-1 max-w-sm">
+                                    Choose or drop your medical checkup PDF on the right panel. It will immediately open right here in this container with full multi-page navigation!
+                                </p>
+                            </div>
+                            <iframe id="upload-pdf-preview" src="" class="hidden w-full flex-1 min-h-[640px] border-none"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Metadata & Health Findings (5 cols) -->
+                    <div class="lg:col-span-5 flex flex-col justify-between">
+                        <form id="direct-upload-form" onsubmit="handleDirectUpload(event)" class="space-y-4">
+                            <!-- File Picker Dropzone -->
+                            <div class="border-2 border-dashed border-sky-300 bg-sky-50/50 rounded-xl p-4 text-center hover:bg-sky-50 transition cursor-pointer" onclick="const inp=document.getElementById('direct-file-input'); inp.value=''; inp.click();">
+                                <input type="file" id="direct-file-input" class="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt" onchange="updateSelectedFileName(this)">
+                                <i data-lucide="upload-cloud" class="w-8 h-8 text-sky-600 mx-auto mb-1"></i>
+                                <p id="selected-file-label" class="text-xs font-bold text-slate-800">Click to choose Medical Report (PDF/Doc)</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Opens instantly into the live container</p>
+                            </div>
+
+                            <!-- Metadata Fields -->
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Patient Name *</label>
+                                    <input type="text" id="direct-patient-name" required class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-sky-500" placeholder="e.g. Mrs. PUVIARASI MJ">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Checkup Year *</label>
+                                        <input type="number" id="direct-report-year" required class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-sky-500" value="2026">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Report Date *</label>
+                                        <input type="date" id="direct-report-date" required class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-sky-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Hospital / Lab</label>
+                                    <input type="text" id="direct-lab-name" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-sky-500" placeholder="e.g. Apollo ProHealth">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Physician Notes / Executive Summary</label>
+                                    <textarea id="direct-notes" rows="2" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-sky-500" placeholder="e.g. Apollo checkup: Mild anemia, prediabetes, elevated LDL, low vitamin D"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Health Findings Checklist for Diet -->
+                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <div class="flex items-center gap-1.5 mb-1.5">
+                                    <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i>
+                                    <h4 class="text-xs font-bold text-slate-800">Diet Plan Focus Areas</h4>
+                                </div>
+                                <p class="text-[11px] text-slate-400 mb-2.5">
+                                    Check the findings from your report to formulate your personalized diet plan:
+                                </p>
+
+                                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="low_hemoglobin" checked class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">Low Hemoglobin / Anemia</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="high_cholesterol" checked class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">Elevated Cholesterol / LDL</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="high_sugar" checked class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">Prediabetes / Blood Sugar (HbA1c)</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="low_vit_d" checked class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">Low Vitamin D</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="high_bp" class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">High Blood Pressure</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="high_uric_acid" class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">High Uric Acid</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 p-2 rounded border border-slate-100 hover:bg-slate-50 cursor-pointer text-xs">
+                                        <input type="checkbox" name="condition" value="elevated_liver" class="w-3.5 h-3.5 text-emerald-600 rounded">
+                                        <span class="font-medium text-slate-800">Fatty Liver / Elevated Enzymes</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-lg shadow-md transition flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i> Save Report to SQL Database
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- EXTRACTED LAB DATA SECTION                               -->
+                <!-- ======================================================== -->
+                <div id="extracted-data-container" class="mt-8 pt-6 border-t border-slate-200 hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="microscope" class="w-5 h-5 text-sky-600"></i>
+                                <h3 class="text-base font-bold text-slate-800">Extracted Clinical Biomarkers from Document</h3>
+                                <span id="extracted-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800">
+                                    0 Tests
+                                </span>
+                                <span id="extracted-abnormal-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                    0 Attention Needed
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">
+                                Cross-check the values below with the document in the container above. You can adjust values or add missing tests.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="addCustomBiomarkerRow()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Custom Test
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category Filter Tabs -->
+                    <div class="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2 text-xs" id="biomarker-category-tabs">
+                        <button type="button" onclick="filterBiomarkerTable('ALL')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-sky-600 text-white" data-category="ALL">All Tests</button>
+                        <button type="button" onclick="filterBiomarkerTable('Lipid Profile')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Lipid Profile">Lipids</button>
+                        <button type="button" onclick="filterBiomarkerTable('Blood Sugar / Diabetes')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Blood Sugar / Diabetes">Blood Sugar</button>
+                        <button type="button" onclick="filterBiomarkerTable('Complete Blood Count')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Complete Blood Count">Complete Blood Count</button>
+                        <button type="button" onclick="filterBiomarkerTable('Thyroid & Vitamins')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Thyroid & Vitamins">Vitamins & Thyroid</button>
+                        <button type="button" onclick="filterBiomarkerTable('Kidney Function')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Kidney Function">Kidney</button>
+                        <button type="button" onclick="filterBiomarkerTable('Liver Function')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Liver Function">Liver</button>
+                        <button type="button" onclick="filterBiomarkerTable('Vitals')" class="cat-filter-btn px-3 py-1.5 rounded-lg font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="Vitals">Vitals</button>
+                    </div>
+
+                    <!-- Biomarkers Table -->
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-sm max-h-[420px] overflow-y-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-50 text-slate-600 font-bold border-b sticky top-0 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-3">Category</th>
+                                    <th class="py-2.5 px-3">Test Name</th>
+                                    <th class="py-2.5 px-3">Result Value</th>
+                                    <th class="py-2.5 px-3">Unit</th>
+                                    <th class="py-2.5 px-3">Reference Range</th>
+                                    <th class="py-2.5 px-3">Status</th>
+                                    <th class="py-2.5 px-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="extracted-biomarkers-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- PROVISION: IMPROVEMENT AREAS & TARGETED DIET PLAN        -->
+                <!-- ======================================================== -->
+                <div id="improvement-and-diet-section" class="mt-8 pt-6 border-t border-slate-200 hidden space-y-6">
+                    <div class="flex items-center gap-2">
+                        <div class="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+                            <i data-lucide="salad" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">Key Improvement Areas & Tailored Diet Plan</h3>
+                            <p class="text-xs text-slate-500">
+                                Formulated based on the out-of-range clinical biomarkers extracted from your report.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- LEFT COLUMN: Improvement Areas / Health Flags (5 cols) -->
+                        <div class="lg:col-span-5 bg-gradient-to-br from-amber-50/50 to-red-50/30 p-5 rounded-2xl border border-amber-200/80 shadow-sm space-y-4">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
+                                <h4 class="text-sm font-bold text-slate-800">Identified Health Improvement Areas</h4>
+                            </div>
+                            <div id="improvement-areas-list" class="space-y-3">
+                                <!-- Populated dynamically with flagged findings -->
+                            </div>
+
+                            <div class="pt-3 border-t border-amber-200/60 text-xs text-slate-600">
+                                <strong class="font-semibold text-slate-800">Primary Nutritional Goals:</strong>
+                                <ul id="improvement-goals-list" class="list-disc pl-4 mt-1.5 space-y-1 text-[11px] text-slate-600">
+                                    <!-- Goals -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: Tailored Diet Plan (7 cols) -->
+                        <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800">Personalized Daily Nutrition Plan</h4>
+                                    <p class="text-xs text-slate-400">Targeted to reverse flags and optimize energy</p>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs">
+                                    <select id="quick-diet-pref" onchange="refreshQuickDietPlan()" class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-semibold text-slate-700">
+                                        <option value="Vegetarian">Vegetarian</option>
+                                        <option value="Non-Vegetarian">Non-Vegetarian</option>
+                                        <option value="Vegan">Vegan</option>
+                                    </select>
+                                    <select id="quick-cuisine-pref" onchange="refreshQuickDietPlan()" class="bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-semibold text-slate-700">
+                                        <option value="Indian">Indian Cuisine</option>
+                                        <option value="Mediterranean">Mediterranean</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Superfoods vs Avoid Grid -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                                    <div class="flex items-center gap-1.5 text-emerald-800 font-bold mb-2">
+                                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Superfoods to Include</span>
+                                    </div>
+                                    <ul id="quick-diet-include" class="space-y-1.5 text-[11px] text-slate-700">
+                                        <!-- Include list -->
+                                    </ul>
+                                </div>
+
+                                <div class="p-3 bg-rose-50/70 border border-rose-200 rounded-xl">
+                                    <div class="flex items-center gap-1.5 text-rose-800 font-bold mb-2">
+                                        <i data-lucide="x-circle" class="w-4 h-4 text-rose-600"></i>
+                                        <span>Foods to Restrict / Avoid</span>
+                                    </div>
+                                    <ul id="quick-diet-avoid" class="space-y-1.5 text-[11px] text-slate-700">
+                                        <!-- Avoid list -->
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Daily Meal Schedule -->
+                            <div>
+                                <h5 class="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-1.5">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-600"></i>
+                                    Sample Daily Meal Schedule
+                                </h5>
+                                <div id="quick-daily-schedule" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Action button -->
+                            <div class="pt-3 border-t flex items-center justify-between">
+                                <button type="button" onclick="window.print()" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                    <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print Diet Sheet
+                                </button>
+                                <button type="button" onclick="openFullDietFromQuick()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition shadow-sm">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Open Full 7-Day Meal Plan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- TAB 4: DIET & NUTRITION PLANNER                          -->
+        <!-- ======================================================== -->
+        <section id="diet-section" class="tab-content hidden space-y-6">
+            
+            <!-- Controls Card -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm no-print">
+                <div class="flex items-center gap-2 mb-3">
+                    <i data-lucide="salad" class="w-5 h-5 text-emerald-600"></i>
+                    <h2 class="text-lg font-bold text-slate-800">Biomarker-Driven Diet Planner</h2>
+                </div>
+                <p class="text-xs text-slate-500 mb-5">
+                    Our nutritional engine correlates out-of-range biomarkers (e.g. elevated LDL, HbA1c, uric acid, liver enzymes, low hemoglobin/vitamins) to construct an evidence-based daily and 7-day meal plan.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Report Selector -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Checkup Report</label>
+                        <select id="diet-report-select" onchange="triggerDietGeneration()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Dietary Preference -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Dietary Preference</label>
+                        <select id="diet-pref-select" onchange="triggerDietGeneration()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                            <option value="Vegetarian">Vegetarian (Lacto-Vegetarian)</option>
+                            <option value="Non-Vegetarian" selected>Non-Vegetarian (Heart-healthy proteins)</option>
+                            <option value="Eggetarian">Eggetarian (Vegetarian + Eggs)</option>
+                            <option value="Vegan">Vegan (Strictly Plant-Based)</option>
+                        </select>
+                    </div>
+
+                    <!-- Cuisine Style -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cuisine Style</label>
+                        <select id="cuisine-pref-select" onchange="triggerDietGeneration()" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                            <option value="Indian" selected>Indian Cuisine (Rotis, Dals, Millets, Sabzis)</option>
+                            <option value="Mediterranean">Mediterranean (Olive oil, grains, fish, legumes)</option>
+                            <option value="Western">Western / Continental (Oats, salads, lean proteins)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex justify-end">
+                    <button onclick="triggerDietGeneration()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow transition flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Personalized Diet Plan
+                    </button>
+                </div>
+            </div>
+
+            <!-- Diet Plan Results Container -->
+            <div id="diet-results">
+                <div class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center text-slate-400">
+                    <i data-lucide="utensils" class="w-12 h-12 mx-auto mb-3 text-slate-300"></i>
+                    <p class="text-sm font-semibold text-slate-600">No diet plan generated yet</p>
+                    <p class="text-xs text-slate-400 mt-1">Select a medical checkup report above and click "Generate Personalized Diet Plan".</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ======================================================== -->
+    <!-- REPORT DETAIL MODAL                                      -->
+    <!-- ======================================================== -->
+    <div id="report-detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div>
+                    <h3 id="modal-patient-name" class="text-lg font-bold text-slate-900">Patient Name</h3>
+                    <p id="modal-report-meta" class="text-xs text-slate-500 mt-0.5">Report Date & Lab</p>
+                </div>
+                <button onclick="closeReportModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 overflow-y-auto flex-1">
+                <div id="modal-biomarkers-container">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                <button onclick="closeReportModal()" class="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-100">
+                    Close
+                </button>
+                <button id="modal-diet-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow flex items-center gap-1.5">
+                    <i data-lucide="salad" class="w-4 h-4"></i> Generate Diet Plan for this Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-App Original Document Viewer Modal -->
+    <div id="doc-viewer-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 flex items-center justify-center hidden p-2 sm:p-4">
+        <div class="bg-white rounded-2xl max-w-5xl w-full h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+            <div class="p-3.5 px-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-sky-100 text-sky-700 rounded-lg">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 id="doc-modal-title" class="text-sm font-bold text-slate-900">Viewing Medical Report</h3>
+                        <p id="doc-modal-subtitle" class="text-[11px] text-slate-500">Original Document Preview</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a id="doc-modal-external-link" href="#" target="_blank" class="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Open in New Tab
+                    </a>
+                    <button onclick="closeDocModal()" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 bg-slate-100 relative">
+                <iframe id="doc-modal-iframe" src="" class="w-full h-full border-none"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/charts.js?v=28"></script>
+    <script src="/static/js/app.js?v=28"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

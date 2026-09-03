@@ -1,0 +1,49 @@
+APOLLO DIAGNOSTICS & PATHOLOGY LABORATORY
+============================================================
+ANNUAL COMPREHENSIVE HEALTH CHECKUP REPORT
+============================================================
+
+Patient Name: Pavithran
+Age: 32 Years / Male
+Registration Date: 22/08/2026
+Report Date: 23/08/2026
+Referred By: Self / Executive Wellness
+
+------------------------------------------------------------
+TEST NAME                       RESULT    UNIT      REF RANGE
+------------------------------------------------------------
+LIPID PROFILE:
+  Total Cholesterol             195.0     mg/dL     125 - 200
+  LDL Cholesterol (Calculated)  118.0     mg/dL     0 - 100
+  HDL Cholesterol (Direct)       46.0     mg/dL     40 - 60
+  Triglycerides                 142.0     mg/dL     0 - 150
+  VLDL Cholesterol               24.0     mg/dL     5 - 30
+
+BLOOD SUGAR / DIABETES PANEL:
+  Fasting Blood Sugar            94.0     mg/dL     70 - 99
+  HbA1c (Glycated Hemoglobin)     5.5     %         4.0 - 5.6
+
+KIDNEY FUNCTION TEST (KFT):
+  Serum Creatinine                0.92    mg/dL     0.7 - 1.3
+  Blood Urea Nitrogen            14.5     mg/dL     7.0 - 20.0
+  Uric Acid                       5.6     mg/dL     3.5 - 7.2
+
+LIVER FUNCTION TEST (LFT):
+  SGPT (ALT)                     28.0     U/L       7 - 55
+  SGOT (AST)                     24.0     U/L       8 - 48
+  Bilirubin Total                 0.8     mg/dL     0.2 - 1.2
+
+COMPLETE BLOOD COUNT (CBC):
+  Hemoglobin                     15.2     g/dL      13.0 - 17.5
+  Total WBC Count              6800.0     cells/mcL 4000 - 11000
+  Platelet Count                  2.6     lakhs/mcL 1.5 - 4.5
+
+THYROID & VITAMINS:
+  TSH (Ultrasensitive)            2.1     uIU/mL    0.4 - 4.0
+  Vitamin D (25-OH)              34.0     ng/mL     30 - 100
+  Vitamin B12                   480.0     pg/mL     211 - 911
+
+VITALS:
+  Blood Pressure (BP)          120/80     mmHg      90/60 - 120/80
+============================================================
+End of Report. Please correlate clinically.
